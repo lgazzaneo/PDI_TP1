@@ -1,0 +1,19 @@
+# En este ejercicio, vamos a calcular cuantos milimetros representa uina distancia de un pixelsobre una imagen si
+# es tomada con una camara de 1 megapixel a un metro de distancia. Ademas, el sensor tiene un area de 10x10 mm y una
+# distancia focal de 35 mm. Tambien sabemos que es un sensor CCD cuadrado. Este esta formado por un arreglo de
+# 1000x1000 pixels.
+
+# Primero, calculamos el tamaño de un pixel en milimetros:
+
+distancia = 1000  # distancia en mm (1 metro = 1000 mm)
+
+tamaño_sensor = 10  # tamaño del sensor en mm
+tamaño_pixel = tamaño_sensor / distancia  # tamaño de un pixel en mm
+
+# Despues, cada pixel mide 0.01 x 0.01 mm en el sensor CCD. Ahora, calculamos el tamaño de un pixel en la imagen:
+
+distancia_focal = 35  # distancia focal en mm
+tamaño_pixel_imagen = (tamaño_pixel * distancia) / distancia_focal  # tamaño de un pixel en la imagen en mm
+
+print(f"El tamaño de un pixel en la imagen es: {tamaño_pixel_imagen:.3f} mm")
+

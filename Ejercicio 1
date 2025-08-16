@@ -1,0 +1,35 @@
+import math
+
+densidad_conos = 150000 
+area = 1.5 * 1.5 # mm2
+distancia = 30 # cm
+
+area_cono = 1 / densidad_conos
+
+# Asumiendo que el cono tiene forma cuadrada, el tamaño ideal de un cono sería:
+
+tamaño_cono = math.sqrt(area_cono) # mm
+
+# Para calcular el tamaño del menor punto visible, utilizamos la relacion de triangulos 
+# similares entre el tamaño en la pantalla y el tamaño en la retina. La distancia focal 
+# del ojo humano es aproximadamente 17 mm, que es una valor promedio basado en la curvatura
+# y el poder refractivo de las lentes oculares.
+# El tamaño del punto en la pantalla se puede calcular como:
+
+distancia_focal = 17 # mm
+
+tamaño_punto = (tamaño_cono * distancia) / distancia_focal # mm
+
+# Finalmente comparamos el tamaño del punto con el tamaño de un pixel en la pantalla.
+# Dado que el tamaño de un pixel en una pantalla típica es de 0.26 mm, podemos determinar
+# si el tamaño del punto es visible o no.
+
+tamaño_pixel = 0.26 # mm
+
+if tamaño_punto < tamaño_pixel:
+    print("El tamaño del punto es menor que el tamaño de un pixel, por lo tanto no es visible.")
+else:
+    print("El tamaño del punto es mayor o igual que el tamaño de un pixel, por lo tanto es visible.")
+
+
+

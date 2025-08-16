@@ -1,0 +1,51 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# En este ejercicio, vamos a crear cuatro imágenes de 9x9 píxeles. Las primera dos imágenes tendrán un píxel central con un valor 
+# de 127 y los píxeles vecinos tendrán un valor de 63 y 223. Las otras dos imágenes tendrán un píxel central con un valor de 127 y 180 y los 
+# píxeles vecinos tendrán un valor de 63 y 223. El objetivo es visualizar un efecto visual llamado contraste simultaneo, ya que el brillo
+# de un píxel central puede parecer diferente dependiendo del brillo de los píxeles vecinos.
+
+# Crear las dos imágenes de 9x9 píxeles
+# Imagen 1: píxeles vecinos = 63
+img1 = np.full((9, 9), 63, dtype=np.uint8)
+img1[4, 4] = 127  # Pixel central = 127
+
+# Imagen 2: píxeles vecinos = 223  
+img2 = np.full((9, 9), 223, dtype=np.uint8)
+img2[4, 4] = 127  # Pixel central = 127
+
+# Imagen 3: píxeles vecinos = 63
+img3 = np.full((9, 9), 63, dtype=np.uint8)
+img3[4, 4] = 127  # Pixel central = 127
+
+# Imagen 4: píxeles vecinos = 223  
+img4 = np.full((9, 9), 223, dtype=np.uint8)
+img4[4, 4] = 180  # Pixel central = 180
+
+
+# Mostrar las imágenes
+plt.figure(figsize=(8, 8))
+
+# Primera imagen
+plt.subplot(2, 2, 1)
+plt.imshow(img1, cmap='gray', vmin=0, vmax=255)
+plt.title('Imagen 1: Central = 127')
+
+# Segunda imagen  
+plt.subplot(2, 2, 2) 
+plt.imshow(img2, cmap='gray', vmin=0, vmax=255)
+plt.title('Imagen 2: Central = 127')
+
+# Tercera imagen
+plt.subplot(2, 2, 3)
+plt.imshow(img3, cmap='gray', vmin=0, vmax=255)
+plt.title('Imagen 3: Central = 127')
+
+# Cuarta imagen
+plt.subplot(2, 2, 4) 
+plt.imshow(img4, cmap='gray', vmin=0, vmax=255)
+plt.title('Imagen 4: Central = 180')
+
+plt.tight_layout()
+plt.show()
