@@ -7,6 +7,7 @@ import torch.serialization
 import matplotlib.pyplot as plt
 import numpy as np
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
+import Noises
 
 #########################################
 # 1. Definición del modelo DnCNN (igual al original)
@@ -27,6 +28,50 @@ class DnCNN(nn.Module):
     def forward(self, x):
         out = self.dncnn(x)
         return x - out  # Residual learning
+    
+
+#########################################
+# FUNCIONES AUXILIARES
+#########################################
+
+def tensor_to_np(t):
+    return t.squeeze().numpy()
+
+def show_comparison(title, original, noisy, denoised):
+    plt.figure(figsize=(12,4))
+    plt.suptitle(title)
+
+    plt.subplot(1,3,1)
+    plt.title("Original")
+    plt.imshow(original, cmap="gray")
+    plt.axis("off")
+
+    plt.subplot(1,3,2)
+    plt.title("Ruidosa")
+    plt.imshow(noisy, cmap="gray")
+    plt.axis("off")
+
+    plt.subplot(1,3,3)
+    plt.title("Denoised DnCNN")
+    plt.imshow(denoised, cmap="gray")
+    plt.axis("off")
+
+    plt.tight_layout()
+    plt.show()
+
+
+def compute_metrics(original, noisy, denoised):
+    psnr_noisy = peak_signal_noise_ratio(original, noisy, data_range=1.0)
+    psnr_denoised = peak_signal_noise_ratio(original, denoised, data_range=1.0)
+
+    ssim_noisy = structural_similarity(original, noisy, data_range=1.0)
+    ssim_denoised = structural_similarity(original, denoised, data_range=1.0)
+
+    print(f"PSNR (ruidosa)  : {psnr_noisy:.2f} dB")
+    print(f"PSNR (denoised) : {psnr_denoised:.2f} dB")
+    print(f"SSIM (ruidosa)  : {ssim_noisy:.4f}")
+    print(f"SSIM (denoised) : {ssim_denoised:.4f}")
+    print("--------------------------------------")
 
 #########################################
 # 2. Cargar modelo
@@ -45,76 +90,69 @@ transform = T.ToTensor()
 img_tensor = transform(img)
 
 #########################################
-# 4. Agregar ruido gaussiano
+# 4. PROCESAR TODOS LOS RUIDOS
 #########################################
-noise_level = 25 / 255.0
-noise = torch.randn(img_tensor.size()) * noise_level
-noisy_img_tensor = img_tensor + noise
-noisy_img_tensor = torch.clamp(noisy_img_tensor, 0., 1.)
 
-#########################################
-# 5. Pasar por la red
-#########################################
+original_np = tensor_to_np(img_tensor)
+
+# =======================================================
+# 4.1 Ruido Gaussiano
+# =======================================================
+noise_level = 25/255.0
+noise_gauss = torch.randn(img_tensor.size()) * noise_level
+gauss_tensor = torch.clamp(img_tensor + noise_gauss, 0., 1.)
+
 with torch.no_grad():
-    input_batch = noisy_img_tensor.unsqueeze(0)  # (1,1,H,W)
-    denoised = model(input_batch).squeeze(0)
+    den_gauss = model(gauss_tensor.unsqueeze(0)).squeeze()
 
-#########################################
-# 6. Guardar resultados
-#########################################
-to_pil = T.ToPILImage()
+show_comparison(
+    "Ruido Gaussiano",
+    original_np,
+    tensor_to_np(gauss_tensor),
+    tensor_to_np(den_gauss)
+)
 
-to_pil(noisy_img_tensor).save("imagen_con_ruido.png")
-to_pil(denoised).save("imagen_denoised.png")
-
-print("Listo! Se guardaron:")
-print("- imagen_con_ruido.png")
-print("- imagen_denoised.png")
+compute_metrics(original_np, tensor_to_np(gauss_tensor), tensor_to_np(den_gauss))
 
 
-#########################################
-# 7. Mostrar imágenes para comparar
-#########################################
+# =======================================================
+# 4.2 Ruido SAL Y PIMIENTA
+# =======================================================
 
-plt.figure(figsize=(12, 4))
+img_uint8 = (original_np * 255).astype(np.uint8)
+sp_uint8 = Noises.ruido_sal_pimienta(img_uint8, prob=0.02)
+sp_tensor = torch.tensor(sp_uint8 / 255.0, dtype=torch.float32).unsqueeze(0)
 
-# Imagen original
-plt.subplot(1, 3, 1)
-plt.title("Original")
-plt.imshow(img, cmap="gray")
-plt.axis("off")
+with torch.no_grad():
+    den_sp = model(sp_tensor.unsqueeze(0)).squeeze()
 
-# Imagen con ruido
-plt.subplot(1, 3, 2)
-plt.title("Con ruido")
-plt.imshow(noisy_img_tensor.squeeze().numpy(), cmap="gray")
-plt.axis("off")
+show_comparison(
+    "Ruido Sal&Pimienta",
+    original_np,
+    tensor_to_np(sp_tensor),
+    tensor_to_np(den_sp)
+)
 
-# Imagen denoised
-plt.subplot(1, 3, 3)
-plt.title("Denoised (DnCNN)")
-plt.imshow(denoised.squeeze().numpy(), cmap="gray")
-plt.axis("off")
-
-plt.tight_layout()
-plt.show()
+compute_metrics(original_np, tensor_to_np(sp_tensor), tensor_to_np(den_sp))
 
 
-# Convertir tensores a numpy
-original_np = img_tensor.squeeze().numpy()
-noisy_np = noisy_img_tensor.squeeze().numpy()
-denoised_np = denoised.squeeze().numpy()
+# =======================================================
+# 4.3 Ruido SPECKLE
+# =======================================================
 
-# PSNR
-psnr_noisy = peak_signal_noise_ratio(original_np, noisy_np, data_range=1.0)
-psnr_denoised = peak_signal_noise_ratio(original_np, denoised_np, data_range=1.0)
+speckle_uint8 = Noises.ruido_speckle(img_uint8)
+speckle_tensor = torch.tensor(speckle_uint8 / 255.0, dtype=torch.float32).unsqueeze(0)
 
-# SSIM
-ssim_noisy = structural_similarity(original_np, noisy_np, data_range=1.0)
-ssim_denoised = structural_similarity(original_np, denoised_np, data_range=1.0)
+with torch.no_grad():
+    den_speckle = model(speckle_tensor.unsqueeze(0)).squeeze()
 
-print("\n### COMPARACIÓN NUMÉRICA ###")
-print(f"PSNR imagen ruidosa    : {psnr_noisy:.2f} dB")
-print(f"PSNR imagen denoised   : {psnr_denoised:.2f} dB")
-print(f"SSIM imagen ruidosa    : {ssim_noisy:.4f}")
-print(f"SSIM imagen denoised   : {ssim_denoised:.4f}")
+show_comparison(
+    "Ruido Speckle",
+    original_np,
+    tensor_to_np(speckle_tensor),
+    tensor_to_np(den_speckle)
+)
+
+compute_metrics(original_np, tensor_to_np(speckle_tensor), tensor_to_np(den_speckle))
+
+print("LISTO!")
